@@ -1,5 +1,10 @@
 import {Shape, ShapeProps, computed, initial, signal} from '@motion-canvas/2d';
-import {SignalValue, SimpleSignal, useLogger} from '@motion-canvas/core';
+import {
+  SerializedVector2,
+  SignalValue,
+  SimpleSignal,
+  useLogger,
+} from '@motion-canvas/core';
 import {highlightTree} from '@lezer/highlight';
 import {Parser} from '@lezer/common';
 import {parser as jsParser} from '@lezer/javascript';
@@ -94,5 +99,40 @@ export class Code extends Shape {
       fontFamily: 'monospace',
       ...props,
     });
+  }
+
+  protected draw(context: CanvasRenderingContext2D): void {
+    // TODO: Write actual render code that's not pulled from the original
+    // CodeBlock component.
+    this.requestFontUpdate();
+    this.applyStyle(context);
+    context.font = this.styles.font;
+    context.textBaseline = 'top';
+    const lh = parseFloat(this.styles.lineHeight);
+    const w = context.measureText('X').width;
+    const size = this.computedSize();
+
+    const drawToken = (code: string, position: SerializedVector2) => {
+      for (let i = 0; i < code.length; i++) {
+        const char = code.charAt(i);
+        if (char === '\n') {
+          position.y++;
+          position.x = 0;
+          continue;
+        }
+        context.fillText(char, position.x * w, position.y * lh);
+        position.x++;
+      }
+    };
+
+    context.translate(size.x / -2, size.y / -2);
+    const highlighted = this.highlighted();
+    const position = {x: 0, y: 0};
+    for (const {token, color} of highlighted) {
+      context.save();
+      context.fillStyle = color ?? '#c9d1d9';
+      drawToken(token, position);
+      context.restore();
+    }
   }
 }
