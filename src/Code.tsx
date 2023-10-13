@@ -13,6 +13,9 @@ import {
   SerializedVector2,
   SignalValue,
   SimpleSignal,
+  ThreadGenerator,
+  TimingFunction,
+  createSignal,
   useLogger,
 } from '@motion-canvas/core';
 import {highlightTree} from '@lezer/highlight';
@@ -41,12 +44,28 @@ export class Code extends Shape {
   @signal()
   public declare readonly dialect: SimpleSignal<string, this>;
 
-  @signal()
-  public declare readonly style: SimpleSignal<HighlightStyle, this>;
-
   @initial(new Color('red'))
   @colorSignal()
   public declare readonly fallbackColor: ColorSignal<this>;
+
+  private oldStyle: HighlightStyle | null = null;
+  private styleProgress = createSignal<number | null>(null);
+
+  @signal()
+  public declare readonly style: SimpleSignal<HighlightStyle, this>;
+
+  protected *tweenStyle(
+    value: HighlightStyle,
+    duration: number,
+    timingFunction: TimingFunction,
+  ): ThreadGenerator {
+    this.oldStyle = this.style();
+    this.style(value);
+    this.styleProgress(0);
+    yield* this.styleProgress(1, duration, timingFunction);
+    this.styleProgress(null);
+    this.oldStyle = null;
+  }
 
   // TODO: Figure out if we can go from Extension -> HighlightStyle
   // @computed()
