@@ -107,6 +107,34 @@ export class Code extends Shape {
     }, []);
   }
 
+  @computed()
+  protected tokens() {
+    const segmenter = new Intl.Segmenter('en', {
+      granularity: 'word',
+    });
+    return this.highlighted()
+      .map(({token, color}) => {
+        // Split tokens so that we preserve emoji and CJK characters.
+        return (
+          Array.from(segmenter.segment(token), c => c.segment)
+            // Combine non-spaced characters within the same token back into
+            // segments so that we can draw ligatures.
+            .reduce(
+              (a, i) =>
+                !i.match(/\s/)
+                  ? [...a.slice(0, -1), a.slice(-1)[0].concat(i)]
+                  : [...a, i],
+              [''],
+            )
+            .map(char => ({
+              color,
+              token: char,
+            }))
+        );
+      })
+      .flat();
+  }
+
   public constructor(props?: CodeProps) {
     super({
       fontFamily: 'monospace',
@@ -123,38 +151,22 @@ export class Code extends Shape {
     context.textBaseline = 'top';
     const lh = parseFloat(this.styles.lineHeight);
     const size = this.computedSize();
-    const segmenter = new Intl.Segmenter('en', {
-      granularity: 'word',
-    });
 
-    const drawToken = (code: string, position: SerializedVector2) => {
-      // Combine non-spaced characters back into segments so that we can
-      // draw ligatures.
-      const chars = Array.from(segmenter.segment(code), c => c.segment).reduce(
-        (a, i) =>
-          !i.match(/\s/)
-            ? [...a.slice(0, -1), a.slice(-1)[0].concat(i)]
-            : [...a, i],
-        [''],
-      );
-
-      for (const char of chars) {
-        console.log(char);
-        if (char === '\n') {
-          position.y += lh;
-          position.x = 0;
-          continue;
-        }
-        const {width} = context.measureText(char);
-        context.fillText(char, position.x, position.y);
-        position.x += width;
+    const drawToken = (token: string, position: SerializedVector2) => {
+      if (token === '\n') {
+        position.y += lh;
+        position.x = 0;
+        return;
       }
+      const {width} = context.measureText(token);
+      context.fillText(token, position.x, position.y);
+      position.x += width;
     };
 
     context.translate(size.x / -2, size.y / -2);
-    const highlighted = this.highlighted();
+    const tokens = this.tokens();
     const position = {x: 0, y: 0};
-    for (const {token, color} of highlighted) {
+    for (const {token, color} of tokens) {
       context.save();
       context.fillStyle = color ?? '#c9d1d9';
       drawToken(token, position);
