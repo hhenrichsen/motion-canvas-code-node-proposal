@@ -1,3 +1,5 @@
+name: 'Generate Preview GIF'
+
 on:
   push:
     branches:
@@ -10,7 +12,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: RisingInIris2017/cjk-fonts-action@v1
       - uses: actions/setup-node@v3
         id: setup-node
         with:
