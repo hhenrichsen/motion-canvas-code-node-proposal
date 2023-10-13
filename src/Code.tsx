@@ -1,5 +1,15 @@
-import {Shape, ShapeProps, computed, initial, signal} from '@motion-canvas/2d';
 import {
+  PossibleCanvasStyle,
+  Shape,
+  ShapeProps,
+  colorSignal,
+  computed,
+  initial,
+  signal,
+} from '@motion-canvas/2d';
+import {
+  Color,
+  ColorSignal,
   SerializedVector2,
   SignalValue,
   SimpleSignal,
@@ -19,6 +29,7 @@ export interface CodeProps extends ShapeProps {
   parser?: SignalValue<Parser>;
   dialect?: SignalValue<string>;
   code?: SignalValue<string>;
+  fallbackColor?: SignalValue<PossibleCanvasStyle>;
   children?: never;
 }
 
@@ -32,6 +43,10 @@ export class Code extends Shape {
 
   @signal()
   public declare readonly style: SimpleSignal<HighlightStyle, this>;
+
+  @initial(new Color('red'))
+  @colorSignal()
+  public declare readonly fallbackColor: ColorSignal<this>;
 
   // TODO: Figure out if we can go from Extension -> HighlightStyle
   // @computed()
@@ -80,7 +95,7 @@ export class Code extends Shape {
         while (tokens.length < to) {
           const token = {
             token: this.code().substring(tokens.length, tokens.length + 1),
-            color: 'red',
+            color: this.fallbackColor().hex(),
           };
           tokens.push(token);
         }

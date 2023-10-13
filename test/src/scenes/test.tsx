@@ -110,6 +110,7 @@ export default makeScene2D(function* (view) {
       style={style}
       ref={c}
       dialect="ts"
+      fallbackColor={'white'}
       fontFamily={'JetBrains Mono'}
       code={`public constructor(props?: CodeProps) {
   // 私🦀です
