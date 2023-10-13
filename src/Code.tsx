@@ -122,22 +122,32 @@ export class Code extends Shape {
     context.font = this.styles.font;
     context.textBaseline = 'top';
     const lh = parseFloat(this.styles.lineHeight);
-    const w = context.measureText('X').width;
     const size = this.computedSize();
     const segmenter = new Intl.Segmenter('en', {
-      granularity: 'grapheme',
+      granularity: 'word',
     });
 
     const drawToken = (code: string, position: SerializedVector2) => {
-      const chars = Array.from(segmenter.segment(code), c => c.segment);
+      // Combine non-spaced characters back into segments so that we can
+      // draw ligatures.
+      const chars = Array.from(segmenter.segment(code), c => c.segment).reduce(
+        (a, i) =>
+          !i.match(/\s/)
+            ? [...a.slice(0, -1), a.slice(-1)[0].concat(i)]
+            : [...a, i],
+        [''],
+      );
+
       for (const char of chars) {
+        console.log(char);
         if (char === '\n') {
-          position.y++;
+          position.y += lh;
           position.x = 0;
           continue;
         }
-        context.fillText(char, position.x * w, position.y * lh);
-        position.x++;
+        const {width} = context.measureText(char);
+        context.fillText(char, position.x, position.y);
+        position.x += width;
       }
     };
 

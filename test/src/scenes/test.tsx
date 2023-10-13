@@ -110,13 +110,14 @@ export default makeScene2D(function* (view) {
       style={style}
       ref={c}
       dialect="ts"
-      fontFamily={'Cartograph CF'}
+      fontFamily={'Jetbrains Mono'}
       code={`public constructor(props?: CodeProps) {
-  // 私 🦀 です
+  // 私🦀です
   super({
     fontFamily: 'monospace',
     ...props,
   });
+  const fn = () => { return 5; }
 }`}
     />,
   );

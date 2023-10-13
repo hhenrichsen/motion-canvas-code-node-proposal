@@ -1,7 +1,7 @@
 {
   "version": 0,
   "shared": {
-    "background": null,
+    "background": "rgb(0,0,0)",
     "range": [
       0,
       null
@@ -21,7 +21,7 @@
     "resolutionScale": 1,
     "colorSpace": "srgb",
     "exporter": {
-      "name": "image sequence",
+      "name": "@motion-canvas/core/image-sequence",
       "options": {
         "fileType": "image/png",
         "quality": 100,
