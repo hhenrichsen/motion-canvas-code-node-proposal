@@ -88,8 +88,25 @@ export class Code extends Shape {
   public declare readonly code: SimpleSignal<string, this>;
 
   @computed()
+  protected whitespaceCorrectedCode() {
+    return this.correctWhitespace(this.code());
+  }
+
+  protected correctWhitespace(str: string) {
+    const lines = str.split('\n');
+    const firstLine = lines[0];
+    if (!firstLine.match(/^\s*$/)) {
+      return str;
+    }
+    const secondLine = lines[1];
+    const indent = secondLine.match(/^\s+/)?.[0] ?? '';
+    const re = new RegExp(`^${indent}`);
+    return lines.map(line => line.replace(re, '')).join('\n');
+  }
+
+  @computed()
   protected parsed() {
-    return this.parser().parse(this.code());
+    return this.parser().parse(this.whitespaceCorrectedCode());
   }
 
   @computed()
@@ -114,7 +131,10 @@ export class Code extends Shape {
         // but it's better to be safe than sorry.
         while (tokens.length < to) {
           const token = {
-            token: this.code().substring(tokens.length, tokens.length + 1),
+            token: this.whitespaceCorrectedCode().substring(
+              tokens.length,
+              tokens.length + 1,
+            ),
             color: this.fallbackColor().hex(),
           };
           tokens.push(token);

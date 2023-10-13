@@ -247,12 +247,13 @@ export default makeScene2D(function* (view) {
 
   yield txt().text('CJK and UTF-8 Characters', 1);
   yield* c().code(
-    `// Note that these do not work in GitHub Actions
-// where this gif is rendered.
-// 私🦀です
-function crab() {
-  console.log('🦀')
-}`,
+    `
+                            // Note that these do not work in GitHub Actions
+                            // where this gif is rendered.
+                            // 私🦀です
+                            function crab() {
+                              console.log('🦀')
+                            }`,
     1,
   );
 
