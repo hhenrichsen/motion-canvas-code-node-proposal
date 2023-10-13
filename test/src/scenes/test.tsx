@@ -247,7 +247,9 @@ export default makeScene2D(function* (view) {
 
   yield txt().text('CJK and UTF-8 Characters', 1);
   yield* c().code(
-    `// 私🦀です
+    `// Note that these do not work in GitHub Actions
+// where this gif is rendered.
+// 私🦀です
 function crab() {
   console.log('🦀')
 }`,
@@ -260,7 +262,6 @@ function crab() {
   yield* c().code(
     `const seaLife = () => {
   if (Math.random() >= .5) {
-    // 私🦀です
     console.log('🦀');
   }
   else if (Math.random() !== 0) {
