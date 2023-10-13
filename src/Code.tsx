@@ -68,7 +68,6 @@ export class Code extends Shape {
           .module.getRules()
           .split('\n')
           .find(rule => rule.includes(classList));
-        console.log(this.code().substring(from, to) + ' ' + rule);
         const color = rule.split('color:')[1]?.split(';')[0];
 
         if (!color) {
@@ -79,10 +78,11 @@ export class Code extends Shape {
         // if they don't make it through the parser. That shouldn't happen,
         // but it's better to be safe than sorry.
         while (tokens.length < to) {
-          tokens.push({
+          const token = {
             token: this.code().substring(tokens.length, tokens.length + 1),
             color: 'red',
-          });
+          };
+          tokens.push(token);
         }
 
         // Update the existing tokens with the new color and classes.
@@ -91,7 +91,20 @@ export class Code extends Shape {
         }
       },
     );
-    return tokens;
+
+    // Join tokens of the same color so that we can do ligatures and such.
+    return tokens.reduce((acc, token) => {
+      if (acc.length === 0) {
+        return [token];
+      }
+      if (acc[acc.length - 1].color === token.color) {
+        const e = acc[acc.length - 1];
+        e.token += token.token;
+      } else {
+        acc.push(token);
+      }
+      return acc;
+    }, []);
   }
 
   public constructor(props?: CodeProps) {
@@ -111,10 +124,13 @@ export class Code extends Shape {
     const lh = parseFloat(this.styles.lineHeight);
     const w = context.measureText('X').width;
     const size = this.computedSize();
+    const segmenter = new Intl.Segmenter('en', {
+      granularity: 'grapheme',
+    });
 
     const drawToken = (code: string, position: SerializedVector2) => {
-      for (let i = 0; i < code.length; i++) {
-        const char = code.charAt(i);
+      const chars = Array.from(segmenter.segment(code), c => c.segment);
+      for (const char of chars) {
         if (char === '\n') {
           position.y++;
           position.x = 0;

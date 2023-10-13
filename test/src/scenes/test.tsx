@@ -109,138 +109,14 @@ export default makeScene2D(function* (view) {
     <Code
       style={style}
       ref={c}
-      offset={[-1, -1]}
-      y={-view.height()}
       dialect="ts"
-      code={`import {Shape, ShapeProps, computed, initial, signal} from '@motion-canvas/2d';
-import {
-  SerializedVector2,
-  SignalValue,
-  SimpleSignal,
-  useLogger,
-} from '@motion-canvas/core';
-import {highlightTree, tags} from '@lezer/highlight';
-import {Parser} from '@lezer/common';
-import {parser as jsParser} from '@lezer/javascript';
-import {HighlightStyle} from '@codemirror/language';
-
-export type CodePoint = [number, number];
-export type CodeRange = [CodePoint, CodePoint];
-
-export type Theme = {
-  [K in keyof typeof tags as Exclude<
-    K,
-    'toString' | 'prototype' | 'length'
-  >]?: string;
-} & {
-  default: string;
-};
-
-export interface CodeProps extends ShapeProps {
-  theme?: SignalValue<Theme>;
-  style?: SignalValue<HighlightStyle>;
-  parser?: SignalValue<Parser>;
-  dialect?: SignalValue<string>;
-  code?: SignalValue<string>;
-  children?: never;
-}
-
-export class Code extends Shape {
-  @initial(jsParser)
-  @signal()
-  public declare readonly parser: SimpleSignal<Parser, this>;
-
-  @signal()
-  public declare readonly dialect: SimpleSignal<string, this>;
-
-  @signal()
-  public declare readonly style: SimpleSignal<HighlightStyle, this>;
-
-  @signal()
-  public declare readonly theme: SimpleSignal<Theme, this>;
-
-  @signal()
-  public declare readonly code: SimpleSignal<string, this>;
-
-  @computed()
-  protected parsed() {
-    return this.parser().parse(this.code());
-  }
-
-  @computed()
-  protected highlighted() {
-    const tokens: {token: string; color: string}[] = [];
-    highlightTree(
-      this.parsed(),
-      this.style(),
-      (from: number, to: number, classList: string) => {
-        const rule = this.style()
-          .module.getRules()
-          .split('\n')
-          .find(rule => rule.includes(classList));
-        console.log(this.code().substring(from, to) + ' ' + rule);
-        const color = rule.split('color:')[1]?.split(';')[0];
-
-        // Make sure that all of the characters make it into the list, even
-        // if they don't make it through the parser. That shouldn't happen,
-        // but it's better to be safe than sorry.
-        while (tokens.length < to) {
-          tokens.push({
-            token: this.code().substring(tokens.length, tokens.length + 1),
-            color: 'white',
-          });
-        }
-
-        // Update the existing tokens with the new color and classes.
-        for (let i = from; i < to; i++) {
-          tokens[i].color = color;
-        }
-      },
-    );
-    return tokens;
-  }
-
-  public constructor(props?: CodeProps) {
-    super({
-      fontFamily: 'monospace',
-      ...props,
-    });
-  }
-
-  protected draw(context: CanvasRenderingContext2D): void {
-    // TODO: Write actual render code that's not pulled from the original
-    // CodeBlock component.
-    this.requestFontUpdate();
-    this.applyStyle(context);
-    context.font = this.styles.font;
-    context.textBaseline = 'top';
-    const lh = parseFloat(this.styles.lineHeight);
-    const w = context.measureText('X').width;
-    const size = this.computedSize();
-
-    const drawToken = (code: string, position: SerializedVector2) => {
-      for (let i = 0; i < code.length; i++) {
-        const char = code.charAt(i);
-        if (char === '\n') {
-          position.y++;
-          position.x = 0;
-          continue;
-        }
-        context.fillText(char, position.x * w, position.y * lh);
-        position.x++;
-      }
-    };
-
-    context.translate(size.x / -2, size.y / -2);
-    const highlighted = this.highlighted();
-    const position = {x: 0, y: 0};
-    for (const {token, color} of highlighted) {
-      context.save();
-      context.fillStyle = color ?? '#c9d1d9';
-      drawToken(token, position);
-      context.restore();
-    }
-  }
+      fontFamily={'Cartograph CF'}
+      code={`public constructor(props?: CodeProps) {
+  // 私 🦀 です
+  super({
+    fontFamily: 'monospace',
+    ...props,
+  });
 }`}
     />,
   );
