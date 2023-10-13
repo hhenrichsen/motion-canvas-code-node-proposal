@@ -15,7 +15,8 @@
     "eslint:fix": "eslint --fix \"**/*.ts?(x)\"",
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "serve": "vite"
+    "serve": "vite",
+    "test": "vitest"
   },
   "unpkg": "lib/bundle.js",
   "main": "lib/index.js",
@@ -47,6 +48,7 @@
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
+    "puppeteer": "^21.3.8",
     "rimraf": "^5.0.5",
     "rollup": "^4.0.2",
     "rollup-plugin-dts": "^6.1.0",
