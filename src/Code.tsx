@@ -1,4 +1,5 @@
 import {
+  DesiredLength,
   PossibleCanvasStyle,
   Shape,
   ShapeProps,
@@ -174,6 +175,32 @@ export class Code extends Shape {
       fontFamily: 'monospace',
       ...props,
     });
+  }
+
+  protected desiredSize(): SerializedVector2<DesiredLength> {
+    this.requestFontUpdate();
+    const tokens = this.tokens();
+    const ctx = this.cacheCanvas();
+    ctx.save();
+    this.applyStyle(ctx);
+    ctx.font = this.styles.font;
+
+    const lh = parseFloat(this.styles.lineHeight);
+    let height = lh;
+    let width = 0;
+
+    let lineWidth = 0;
+    for (const {token} of tokens) {
+      lineWidth += ctx.measureText(token).width;
+      if (token == '\n') {
+        height += lh;
+        width = Math.max(lineWidth, width);
+        lineWidth = 0;
+      }
+    }
+    ctx.restore();
+
+    return {y: height, x: width};
   }
 
   protected draw(context: CanvasRenderingContext2D): void {
