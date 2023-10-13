@@ -5,11 +5,12 @@ on:
 
 jobs:
   pre-release:
-    name: 'Pre Release'
+    name: 'Generate Preview GIF'
     runs-on: 'ubuntu-latest'
 
     steps:
       - uses: actions/checkout@v3
+      - uses: RisingInIris2017/cjk-fonts-action@v1
       - uses: actions/setup-node@v3
         id: setup-node
         with:
