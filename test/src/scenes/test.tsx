@@ -228,7 +228,7 @@ export default makeScene2D(function* (view) {
 }`}
     />,
   );
-  yield* waitFor(3);
+  yield* waitFor(1.5);
 
   yield txt().text('Code Manipulation', 1);
   yield* c().code(
@@ -243,7 +243,7 @@ export default makeScene2D(function* (view) {
     1,
   );
 
-  yield* waitFor(3);
+  yield* waitFor(1.5);
 
   yield txt().text('CJK and UTF-8 Characters', 1);
   yield* c().code(
@@ -257,7 +257,7 @@ export default makeScene2D(function* (view) {
     1,
   );
 
-  yield* waitFor(3);
+  yield* waitFor(1.5);
 
   yield txt().text('Ligatures', 1);
   yield* c().code(
