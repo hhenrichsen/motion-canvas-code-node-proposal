@@ -25,6 +25,7 @@ import {Parser} from '@lezer/common';
 import {parser as jsParser} from '@lezer/javascript';
 import {HighlightStyle} from '@codemirror/language';
 import {Extension} from '@codemirror/state';
+import {correctWhitespace} from './correctWhitespace';
 
 export type CodePoint = [number, number];
 export type CodeRange = [CodePoint, CodePoint];
@@ -86,25 +87,10 @@ export class Code extends Shape {
   // }
 
   @parser(function (this: Code, value: string): string {
-    return this.correctWhitespace(value);
+    return correctWhitespace(value);
   })
   @signal()
   public declare readonly code: SimpleSignal<string, this>;
-
-  protected correctWhitespace(str: string) {
-    const lines = str.split('\n');
-    const firstLine = lines[0];
-    if (!firstLine.match(/^\s*$/)) {
-      return str;
-    }
-    const secondLine = lines[1];
-    const indent = secondLine.match(/^\s+/)?.[0] ?? '';
-    const re = new RegExp(`^${indent}`);
-    return lines
-      .slice(1)
-      .map(line => line.replace(re, ''))
-      .join('\n');
-  }
 
   @computed()
   protected parsed() {
