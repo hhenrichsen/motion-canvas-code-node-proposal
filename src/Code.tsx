@@ -49,7 +49,7 @@ export class Code extends Shape {
   @colorSignal()
   public declare readonly fallbackColor: ColorSignal<this>;
 
-  private oldStyle: HighlightStyle | null = null;
+  private oldStyle = createSignal<HighlightStyle | null>(null);
   private styleProgress = createSignal<number | null>(null);
 
   @signal()
@@ -60,12 +60,12 @@ export class Code extends Shape {
     duration: number,
     timingFunction: TimingFunction,
   ): ThreadGenerator {
-    this.oldStyle = this.style();
+    this.oldStyle(this.style());
     this.style(value);
     this.styleProgress(0);
     yield* this.styleProgress(1, duration, timingFunction);
     this.styleProgress(null);
-    this.oldStyle = null;
+    this.oldStyle(null);
   }
 
   // TODO: Figure out if we can go from Extension -> HighlightStyle
@@ -113,56 +113,37 @@ export class Code extends Shape {
   }
 
   @computed()
+  protected oldHighlighted() {
+    const oldStyle = this.oldStyle();
+    if (!oldStyle) {
+      return null;
+    }
+    return this.highlight(oldStyle);
+  }
+
+  @computed()
+  protected newHighlighted() {
+    return this.highlight(this.style());
+  }
+
+  @computed()
   protected highlighted() {
-    const tokens: {token: string; color: string}[] = [];
-    highlightTree(
-      this.parsed(),
-      this.style(),
-      (from: number, to: number, classList: string) => {
-        const rule = this.style()
-          .module.getRules()
-          .split('\n')
-          .find(rule => rule.includes(classList));
-        const color = rule.split('color:')[1]?.split(';')[0];
+    if (this.styleProgress() === null) {
+      return this.newHighlighted();
+    }
+    const zipped = this.newHighlighted().map((token, i) => [
+      token,
+      this.oldHighlighted()[i],
+    ]);
 
-        if (!color) {
-          useLogger().warn(`Unknown theme class '${classList}'`);
-        }
+    const blendHsl = (c1: string, c2: string, amount: number): string => {
+      return new Color(c1).mix(c2, amount, 'hsl').hex();
+    };
 
-        // Make sure that all of the characters make it into the list, even
-        // if they don't make it through the parser. That shouldn't happen,
-        // but it's better to be safe than sorry.
-        while (tokens.length < to) {
-          const token = {
-            token: this.whitespaceCorrectedCode().substring(
-              tokens.length,
-              tokens.length + 1,
-            ),
-            color: this.fallbackColor().hex(),
-          };
-          tokens.push(token);
-        }
-
-        // Update the existing tokens with the new color and classes.
-        for (let i = from; i < to; i++) {
-          tokens[i].color = color;
-        }
-      },
-    );
-
-    // Join tokens of the same color so that we can do ligatures and such.
-    return tokens.reduce((acc, token) => {
-      if (acc.length === 0) {
-        return [token];
-      }
-      if (acc[acc.length - 1].color === token.color) {
-        const e = acc[acc.length - 1];
-        e.token += token.token;
-      } else {
-        acc.push(token);
-      }
-      return acc;
-    }, []);
+    return zipped.map(([newToken, oldToken]) => ({
+      token: newToken.token,
+      color: blendHsl(newToken.color, oldToken.color, 1 - this.styleProgress()),
+    }));
   }
 
   @computed()
@@ -191,6 +172,58 @@ export class Code extends Shape {
         );
       })
       .flat();
+  }
+
+  protected highlight(style: HighlightStyle) {
+    const tokens: {token: string; color: string}[] = [];
+    highlightTree(
+      this.parsed(),
+      style,
+      (from: number, to: number, classList: string) => {
+        const rule = style.module
+          .getRules()
+          .split('\n')
+          .find(rule => rule.includes(classList));
+        const color = rule.split('color:')[1]?.split(';')[0].trim();
+
+        if (!color) {
+          useLogger().warn(`Unknown theme class '${classList}'`);
+        }
+
+        // Make sure that all of the characters make it into the list, even
+        // if they don't make it through the parser. That shouldn't happen,
+        // but it's better to be safe than sorry.
+        while (tokens.length < to) {
+          const token = {
+            token: this.whitespaceCorrectedCode().substring(
+              tokens.length,
+              tokens.length + 1,
+            ),
+            color: this.fallbackColor().hex(),
+          };
+          tokens.push(token);
+        }
+
+        // Update the existing tokens with the new color and classes.
+        for (let i = from; i < to; i++) {
+          tokens[i].color = color;
+        }
+      },
+    );
+
+    // Join tokens of the same color so that we can do ligatures and such.
+    return tokens.reduce<{color: string; token: string}[]>((acc, token) => {
+      if (acc.length === 0) {
+        return [token];
+      }
+      if (acc[acc.length - 1].color === token.color) {
+        const e = acc[acc.length - 1];
+        e.token += token.token;
+      } else {
+        acc.push(token);
+      }
+      return acc;
+    }, []);
   }
 
   public constructor(props?: CodeProps) {
