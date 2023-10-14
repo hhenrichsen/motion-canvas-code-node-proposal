@@ -101,7 +101,10 @@ export class Code extends Shape {
     const secondLine = lines[1];
     const indent = secondLine.match(/^\s+/)?.[0] ?? '';
     const re = new RegExp(`^${indent}`);
-    return lines.map(line => line.replace(re, '')).join('\n');
+    return lines
+      .slice(1)
+      .map(line => line.replace(re, ''))
+      .join('\n');
   }
 
   @computed()
