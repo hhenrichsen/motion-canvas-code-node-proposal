@@ -6,6 +6,7 @@ import {
   colorSignal,
   computed,
   initial,
+  parser,
   signal,
 } from '@motion-canvas/2d';
 import {
@@ -84,13 +85,11 @@ export class Code extends Shape {
   //   }
   // }
 
+  @parser(function (this: Code, value: string): string {
+    return this.correctWhitespace(value);
+  })
   @signal()
   public declare readonly code: SimpleSignal<string, this>;
-
-  @computed()
-  protected whitespaceCorrectedCode() {
-    return this.correctWhitespace(this.code());
-  }
 
   protected correctWhitespace(str: string) {
     const lines = str.split('\n');
@@ -109,7 +108,7 @@ export class Code extends Shape {
 
   @computed()
   protected parsed() {
-    return this.parser().parse(this.whitespaceCorrectedCode());
+    return this.parser().parse(this.code());
   }
 
   @computed()
@@ -195,10 +194,7 @@ export class Code extends Shape {
         // but it's better to be safe than sorry.
         while (tokens.length < to) {
           const token = {
-            token: this.whitespaceCorrectedCode().substring(
-              tokens.length,
-              tokens.length + 1,
-            ),
+            token: this.code().substring(tokens.length, tokens.length + 1),
             color: this.fallbackColor().hex(),
           };
           tokens.push(token);
