@@ -81,22 +81,6 @@ export class Code extends Shape {
     this.oldStyle(null);
   }
 
-  // TODO: Figure out if we can go from Extension -> HighlightStyle
-  // @computed()
-  // protected highlightStyle(): HighlightStyle {
-  //   const rawStyle = this.style();
-  //   if (!(rawStyle instanceof HighlightStyle)) {
-  //     debugger;
-  //     if (Array.isArray(rawStyle)) {
-  //       rawStyle.find(
-  //         extension => (extension as any)?.value instanceof StyleModule,
-  //       );
-  //     }
-  //   } else {
-  //     return rawStyle;
-  //   }
-  // }
-
   @parser(function (this: Code, value: string): string {
     return correctWhitespace(value);
   })
