@@ -39,6 +39,17 @@ export interface CodeProps extends ShapeProps {
   children?: never;
 }
 
+function zip<A, B>(a: A[], b: B[]): [A, B][] {
+  return a.map((a, i) => [a, b[i]]);
+}
+
+export function CODE(
+  strings: TemplateStringsArray,
+  ...tags: SignalValue<string>[]
+) {
+  return zip([...strings], tags);
+}
+
 export class Code extends Shape {
   @initial(jsParser)
   @signal()
