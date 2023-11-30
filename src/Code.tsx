@@ -17,6 +17,8 @@ import {
   SimpleSignal,
   ThreadGenerator,
   TimingFunction,
+  Vector2,
+  createComputed,
   createSignal,
   useLogger,
 } from '@motion-canvas/core';
@@ -29,6 +31,86 @@ import {correctWhitespace} from './correctWhitespace';
 
 export type CodePoint = [number, number];
 export type CodeRange = [CodePoint, CodePoint];
+export type CodeInit = [string, SignalValue<string>][];
+
+const v2 = Vector2.createSignal([1, 2]);
+const a = CODE`const test = new ${() => v2().toString()}`;
+
+export class CodeSignal {
+  public readonly zeroText = createSignal<CodeInit>([['', undefined]]);
+  public readonly zeroCombined = createComputed(() => {
+    return this.zeroText()
+      .map(([text, signal]) => {
+        if (signal === undefined) {
+          return text;
+        }
+        if (signal instanceof Function) {
+          return text + signal();
+        }
+        return text + signal;
+      })
+      .join('');
+  });
+  public readonly zeroParsed = createComputed(() =>
+    this.parser.parse(this.zeroCombined()),
+  );
+
+  public readonly oneText = createSignal<CodeInit>([['', undefined]]);
+  public readonly oneCombined = createComputed(() => {
+    return this.oneText()
+      .map(([text, signal]) => {
+        if (signal === undefined) {
+          return text;
+        }
+        if (signal instanceof Function) {
+          return text + signal();
+        }
+        return text + signal;
+      })
+      .join('');
+  });
+  public readonly oneParsed = createComputed(() =>
+    this.parser.parse(this.oneCombined()),
+  );
+  public readonly progress = createSignal(0);
+
+  public constructor(
+    private readonly parser: Parser,
+    private readonly dialect: string,
+    init: string | CodeInit,
+  ) {
+    const fixedInit: CodeInit =
+      typeof init === 'string' ? [[init, undefined]] : init;
+    this.zeroText(fixedInit);
+    this.oneText(fixedInit);
+  }
+
+  public *append(
+    text: SignalValue<string>,
+    duration: number,
+    timingFunction: TimingFunction,
+  ): ThreadGenerator {
+    const last = this.oneText().slice(-1)[0];
+    if (last[1] === undefined) {
+      if (text instanceof Function) {
+        this.oneText([...this.oneText().slice(0, -1), [last[0], text]]);
+      } else {
+        this.oneText([
+          ...this.oneText().slice(0, -1),
+          [last[0] + text, undefined],
+        ]);
+      }
+    } else {
+      if (text instanceof Function) {
+        this.oneText([...this.oneText(), ['', text]]);
+      } else {
+        this.oneText([...this.oneText(), [text, undefined]]);
+      }
+    }
+    yield* this.progress(1, duration, timingFunction);
+    this.zeroText(this.oneText());
+  }
+}
 
 export interface CodeProps extends ShapeProps {
   style?: SignalValue<HighlightStyle | Extension>;
