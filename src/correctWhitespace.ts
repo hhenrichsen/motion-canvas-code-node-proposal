@@ -5,8 +5,6 @@ export function correctWhitespace(str: string) {
   const indent = Math.min(
     ...lines.map(line => (line.match(/^\s+/)?.[0] ?? '').length),
   );
-  console.log('indent', indent);
   const re = new RegExp(`^${' '.repeat(indent)}`);
-  console.log(lines);
   return lines.map(line => line.replace(re, '')).join('\n');
 }
