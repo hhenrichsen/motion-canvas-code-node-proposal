@@ -36,7 +36,7 @@
     "code-fns": "^0.11.0"
   },
   "devDependencies": {
-    "@motion-canvas/ui": "^3.12.1",
+    "@motion-canvas/ui": "^3.12.3",
     "@motion-canvas/vite-plugin": "^3.12.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.5",
