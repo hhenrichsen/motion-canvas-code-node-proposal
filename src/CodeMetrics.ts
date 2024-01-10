@@ -1,4 +1,4 @@
-export interface CodeToken {
+export interface CodeMetrics {
   content: string;
   newRows: number;
   endColumn: number;
@@ -7,11 +7,11 @@ export interface CodeToken {
   lastWidth: number;
 }
 
-export function stringToToken(
+export function measureString(
   context: CanvasRenderingContext2D,
   monoWidth: number,
   value: string,
-): CodeToken {
+): CodeMetrics {
   const lines = value.split('\n');
   const lastLine = lines[lines.length - 1];
   const firstWidth = Math.round(
@@ -42,6 +42,6 @@ export function stringToToken(
   };
 }
 
-export function isCodeToken(value: any): value is CodeToken {
+export function isCodeMetrics(value: any): value is CodeMetrics {
   return value?.content !== undefined;
 }

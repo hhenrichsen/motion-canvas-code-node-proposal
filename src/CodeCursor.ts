@@ -8,7 +8,7 @@ import {
 } from '@motion-canvas/core';
 import {CodeScope, isCodeScope} from '@components/CodeScope';
 import {CodeFragment, parseCodeFragment} from '@components/CodeFragment';
-import {CodeToken} from '@components/CodeToken';
+import {CodeMetrics} from '@components/CodeMetrics';
 import {Code} from '@components/Code';
 import {CodeHighlighter} from '@components/CodeHighlighter';
 
@@ -236,13 +236,13 @@ export class CodeCursor {
     this.context.restore();
   }
 
-  private calculateWidth(token: CodeToken): number {
+  private calculateWidth(token: CodeMetrics): number {
     return token.newRows === 0
       ? this.cursor.x + token.lastWidth
       : token.lastWidth;
   }
 
-  private calculateMaxWidth(token: CodeToken): number {
+  private calculateMaxWidth(token: CodeMetrics): number {
     return Math.max(
       this.maxWidth,
       token.maxWidth,

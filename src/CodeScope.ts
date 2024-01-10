@@ -1,6 +1,6 @@
 import {SignalValue, unwrap} from '@motion-canvas/core';
 import {CodeFragment, PossibleCodeFragment} from '@components/CodeFragment';
-import {isCodeToken} from '@components/CodeToken';
+import {isCodeMetrics} from '@components/CodeMetrics';
 
 export interface CodeScope {
   progress: SignalValue<number>;
@@ -57,7 +57,7 @@ export function resolveScope(
       code += fragment;
     } else if (isCodeScope(fragment)) {
       code += resolveScope(fragment, isAfter);
-    } else if (isCodeToken(fragment)) {
+    } else if (isCodeMetrics(fragment)) {
       code += fragment.content;
     } else {
       code += after

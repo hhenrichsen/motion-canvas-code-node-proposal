@@ -1,17 +1,21 @@
-import {CodeToken, isCodeToken, stringToToken} from '@components/CodeToken';
+import {
+  CodeMetrics,
+  isCodeMetrics,
+  measureString,
+} from '@components/CodeMetrics';
 
 export interface CodeFragment {
-  before: CodeToken;
-  after: CodeToken;
+  before: CodeMetrics;
+  after: CodeMetrics;
 }
 
 export type PossibleCodeFragment =
   | CodeFragment
-  | CodeToken
+  | CodeMetrics
   | {before: string; after: string}
   | string;
 
-export function tokenToFragment(value: CodeToken): CodeFragment {
+export function tokenToFragment(value: CodeMetrics): CodeFragment {
   return {
     before: value,
     after: value,
@@ -25,18 +29,18 @@ export function parseCodeFragment(
 ): CodeFragment {
   let fragment: CodeFragment;
   if (typeof value === 'string') {
-    fragment = tokenToFragment(stringToToken(context, monoWidth, value));
-  } else if (isCodeToken(value)) {
+    fragment = tokenToFragment(measureString(context, monoWidth, value));
+  } else if (isCodeMetrics(value)) {
     fragment = tokenToFragment(value);
   } else {
     fragment = {
       before:
         typeof value.before === 'string'
-          ? stringToToken(context, monoWidth, value.before)
+          ? measureString(context, monoWidth, value.before)
           : value.before,
       after:
         typeof value.after === 'string'
-          ? stringToToken(context, monoWidth, value.after)
+          ? measureString(context, monoWidth, value.after)
           : value.after,
     };
   }
