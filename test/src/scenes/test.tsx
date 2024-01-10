@@ -1,11 +1,12 @@
 import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 import {waitFor} from '@motion-canvas/core/lib/flow';
 import {Code} from '@components/Code';
-import {createRef, createSignal} from '@motion-canvas/core';
+import {createRef} from '@motion-canvas/core';
 import {HighlightStyle} from '@codemirror/language';
 import {tags as t} from '@lezer/highlight';
 import {Txt} from '@motion-canvas/2d';
 import {LezerHighlighter} from '@components/LezerHighlighter';
+import {CODE} from '@components/CodeScope';
 
 export default makeScene2D(function* (view) {
   // Create your animations here
@@ -120,44 +121,26 @@ export default makeScene2D(function* (view) {
     />,
   );
 
-  const transition = createSignal(0);
+  const nested = Code.createSignal(`Hello`);
+
   view.add(
     <Code
       ref={c}
       dialect="js"
-      x={0}
-      y={0}
       fill={'white'}
       fontFamily={'JetBrains Mono'}
-      code={{
-        progress: transition,
-        fragments: [
-          'function ',
-          'hello()',
-          ' {\n',
-          {
-            before: '',
-            after: '  if (Math.random() > .5) {\n  ',
-          },
-          "  console.log('Hello World');\n",
-          {
-            before: '',
-            after: `  } else {
-    console.log('Goodbye World');
-  }\n`,
-          },
-          '}',
-        ],
-      }}
+      code={CODE`function hello() {
+  console.log('${nested}');
+}`}
     />,
   );
 
-  yield* waitFor(1.5);
-
   yield txt().text('Code Manipulation', 1);
-  yield* transition(1, 1);
+  yield* nested(`World`, 1);
+  yield* waitFor(0.5);
+  yield* nested(`Hello World`, 0.5);
 
-  c().code(
+  yield* c().code(
     `function hello() {
   if (Math.random() > .5) {
     console.log('Hello World');
@@ -165,6 +148,7 @@ export default makeScene2D(function* (view) {
     console.log('Goodbye World');
   }
 }`,
+    1,
   );
 
   yield* waitFor(1.5);

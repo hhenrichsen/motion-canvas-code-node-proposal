@@ -96,6 +96,33 @@ export class LezerHighlighter implements CodeHighlighter<LezerCache | null> {
     };
   }
 
+  public tokenize(code: string, dialect: string): string[] {
+    const parser = this.parserMap.get(dialect);
+    if (!parser) {
+      useLogger().warn(`No parser found for dialect: ${dialect}`);
+      return [];
+    }
+
+    const tree = parser.parse(code);
+    const cursor = tree.cursor();
+    const tokens: string[] = [];
+    let current = 0;
+
+    do {
+      if (!cursor.node.firstChild) {
+        if (cursor.from > current) {
+          tokens.push(code.slice(current, cursor.from));
+        }
+        if (cursor.from < cursor.to) {
+          tokens.push(code.slice(cursor.from, cursor.to));
+        }
+        current = cursor.to;
+      }
+    } while (cursor.next());
+
+    return tokens;
+  }
+
   private getNodeId(node: SyntaxNode): number {
     if (!node.parent) {
       return -1;
