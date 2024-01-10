@@ -1,10 +1,11 @@
 import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 import {waitFor} from '@motion-canvas/core/lib/flow';
 import {Code} from '@components/Code';
-import {createRef} from '@motion-canvas/core';
+import {createRef, createSignal} from '@motion-canvas/core';
 import {HighlightStyle} from '@codemirror/language';
 import {tags as t} from '@lezer/highlight';
 import {Txt} from '@motion-canvas/2d';
+import {LezerHighlighter} from '@components/LezerHighlighter';
 
 export default makeScene2D(function* (view) {
   // Create your animations here
@@ -12,6 +13,7 @@ export default makeScene2D(function* (view) {
   const c = createRef<Code>();
   const txt = createRef<Txt>();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const materialHighlightStyle = HighlightStyle.define([
     {tag: t.keyword, color: '#cf6edf'},
     {
@@ -204,6 +206,8 @@ export default makeScene2D(function* (view) {
     {tag: t.invalid, color: '#434c5e', borderBottom: `1px dotted #d30102`},
   ]);
 
+  const highlighter = new LezerHighlighter(nordHighlightStyle);
+
   view.add(
     <Txt
       fontSize={48}
@@ -214,33 +218,52 @@ export default makeScene2D(function* (view) {
     />,
   );
 
+  const transition = createSignal(0);
   view.add(
     <Code
-      style={nordHighlightStyle}
       ref={c}
-      dialect="ts"
+      highlighter={highlighter}
+      dialect="js"
       x={0}
       y={0}
-      fallbackColor={'white'}
+      fill={'white'}
       fontFamily={'JetBrains Mono'}
-      code={`function hello() {
-  console.log('Hello World');
-}`}
+      code={{
+        progress: transition,
+        fragments: [
+          'function ',
+          'hello()',
+          ' {\n',
+          {
+            before: '',
+            after: '  if (Math.random() > .5) {\n  ',
+          },
+          "  console.log('Hello World');\n",
+          {
+            before: '',
+            after: `  } else {
+    console.log('Goodbye World');
+  }\n`,
+          },
+          '}',
+        ],
+      }}
     />,
   );
+
   yield* waitFor(1.5);
 
   yield txt().text('Code Manipulation', 1);
-  yield* c().code(
+  yield* transition(1, 1);
+
+  c().code(
     `function hello() {
   if (Math.random() > .5) {
     console.log('Hello World');
   } else {
-    console.log('Goodbye World');    
+    console.log('Goodbye World');
   }
-}
-  `,
-    1,
+}`,
   );
 
   yield* waitFor(1.5);
@@ -248,12 +271,12 @@ export default makeScene2D(function* (view) {
   yield txt().text('CJK and UTF-8 Characters', 1);
   yield* c().code(
     `
-                            // Note that these do not work in GitHub Actions
-                            // where this gif is rendered.
-                            // 私🦀です
-                            function crab() {
-                              console.log('🦀')
-                            }`,
+// Note that these do not work in GitHub Actions
+// where this gif is rendered.
+// 私🦀です
+function crab() {
+  console.log('🦀')
+}`,
     1,
   );
 
@@ -277,8 +300,9 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(2);
 
-  yield txt().text('Color Themes', 1);
-  yield* c().style(materialHighlightStyle, 1);
+  // TODO: Reimplement via CodeHighlighter
+  // yield txt().text('Color Themes', 1);
+  // yield* c().style(materialHighlightStyle, 1);
 
   yield* waitFor(2);
 });
