@@ -2,28 +2,26 @@ import {
   computed,
   DesiredLength,
   initial,
-  parser,
   Shape,
   ShapeProps,
   signal,
 } from '@motion-canvas/2d';
 import {
   SerializedVector2,
-  Signal,
   SignalValue,
   SimpleSignal,
   unwrap,
 } from '@motion-canvas/core';
 import {CodeHighlighter} from '@components/CodeHighlighter';
-import {
-  CodeScope,
-  parseCodeScope,
-  PossibleCodeScope,
-  resolveScope,
-} from '@components/CodeScope';
+import {PossibleCodeScope, resolveScope} from '@components/CodeScope';
 import {CodeCursor} from '@components/CodeCursor';
 import {LezerHighlighter} from '@components/LezerHighlighter';
 import {DefaultHighlightStyle} from '@components/DefaultHighlightStyle';
+import {
+  CodeSignal,
+  codeSignal,
+  CodeSignalContext,
+} from '@components/CodeSignal';
 
 export interface CodeProps extends ShapeProps {
   highlighter?: SignalValue<CodeHighlighter | null>;
@@ -33,6 +31,26 @@ export interface CodeProps extends ShapeProps {
 }
 
 export class Code extends Shape {
+  /**
+   * Create a standalone code signal.
+   *
+   * @param initial - The initial code.
+   * @param highlighter - Custom highlighter to use.
+   * @param dialect - Custom dialect to use.
+   */
+  public static createSignal(
+    initial: PossibleCodeScope,
+    highlighter?: SignalValue<CodeHighlighter>,
+    dialect?: SignalValue<string>,
+  ): CodeSignal<void> {
+    return new CodeSignalContext<void>(
+      initial,
+      undefined,
+      highlighter,
+      dialect,
+    ).toSignal();
+  }
+
   public static readonly highlighter = new LezerHighlighter(
     DefaultHighlightStyle,
   );
@@ -44,10 +62,8 @@ export class Code extends Shape {
   @signal()
   public declare readonly highlighter: SimpleSignal<CodeHighlighter, this>;
 
-  @initial('')
-  @parser(parseCodeScope)
-  @signal()
-  public declare readonly code: Signal<PossibleCodeScope, CodeScope, this>;
+  @codeSignal()
+  public declare readonly code: CodeSignal<this>;
 
   /**
    * Get the currently displayed code as a string.
@@ -79,6 +95,20 @@ export class Code extends Shape {
       fontFamily: 'monospace',
       ...props,
     });
+  }
+
+  /**
+   * Create a child code signal.
+   *
+   * @param initial - The initial code.
+   */
+  public createSignal(initial: PossibleCodeScope): CodeSignal<this> {
+    return new CodeSignalContext<this>(
+      initial,
+      this,
+      this.highlighter,
+      this.dialect,
+    ).toSignal();
   }
 
   protected override desiredSize(): SerializedVector2<DesiredLength> {

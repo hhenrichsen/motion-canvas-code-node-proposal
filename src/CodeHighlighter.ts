@@ -64,4 +64,12 @@ export interface CodeHighlighter<T = unknown> {
    * @param cache - The result of {@link prepare}.
    */
   highlight(index: number, cache: T): HighlightResult;
+
+  /**
+   * Tokenize the code.
+   *
+   * @param code - The code to tokenize.
+   * @param dialect - The language in which the code is written.
+   */
+  tokenize(code: string, dialect: string): string[];
 }

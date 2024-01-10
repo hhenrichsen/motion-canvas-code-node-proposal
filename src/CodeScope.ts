@@ -1,26 +1,29 @@
 import {SignalValue, unwrap} from '@motion-canvas/core';
-import {CodeFragment, PossibleCodeFragment} from '@components/CodeFragment';
+import {PossibleCodeFragment} from '@components/CodeFragment';
 import {isCodeMetrics} from '@components/CodeMetrics';
 
 export interface CodeScope {
   progress: SignalValue<number>;
-  fragments: Iterable<CodeTag>;
+  fragments: CodeTag[];
 }
 
-export type PossibleCodeScope = CodeScope | Iterable<CodeTag> | string;
+export type PossibleCodeScope = CodeScope | CodeTag[] | string;
 
-export type CodeTag = SignalValue<PossibleCodeFragment | CodeFragment>;
+export type CodeTag = SignalValue<PossibleCodeFragment | CodeScope>;
 
-export function* CODE(
+export function CODE(
   strings: TemplateStringsArray,
   ...tags: CodeTag[]
-): Generator<CodeTag> {
+): CodeTag[] {
+  const result: CodeTag[] = [];
   for (let i = 0; i < strings.length; i++) {
-    yield strings[i];
+    result.push(strings[i]);
     if (tags[i] !== undefined) {
-      yield tags[i];
+      result.push(tags[i]);
     }
   }
+
+  return result;
 }
 
 export function isCodeScope(value: any): value is CodeScope {
@@ -35,7 +38,7 @@ export function parseCodeScope(value: PossibleCodeScope): CodeScope {
     };
   }
 
-  if (Symbol.iterator in value) {
+  if (Array.isArray(value)) {
     return {
       progress: 0,
       fragments: value,
