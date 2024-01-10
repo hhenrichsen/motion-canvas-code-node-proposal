@@ -47,20 +47,20 @@ export function parseCodeScope(value: PossibleCodeScope): CodeScope {
 
 export function resolveScope(
   scope: CodeScope,
-  predicate: ((scope: CodeScope) => boolean) | boolean,
+  isAfter: ((scope: CodeScope) => boolean) | boolean,
 ): string {
   let code = '';
-  const isAfter = typeof predicate === 'boolean' ? predicate : predicate(scope);
+  const after = typeof isAfter === 'boolean' ? isAfter : isAfter(scope);
   for (const wrapped of scope.fragments) {
     const fragment = unwrap(wrapped);
     if (typeof fragment === 'string') {
       code += fragment;
     } else if (isCodeScope(fragment)) {
-      code += resolveScope(fragment, predicate);
+      code += resolveScope(fragment, isAfter);
     } else if (isCodeToken(fragment)) {
       code += fragment.content;
     } else {
-      code += isAfter
+      code += after
         ? typeof fragment.after === 'string'
           ? fragment.after
           : fragment.after.content
