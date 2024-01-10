@@ -22,17 +22,26 @@ import {
   resolveScope,
 } from '@components/CodeScope';
 import {CodeCursor} from '@components/CodeCursor';
+import {LezerHighlighter} from '@components/LezerHighlighter';
+import {DefaultHighlightStyle} from '@components/DefaultHighlightStyle';
 
 export interface CodeProps extends ShapeProps {
-  highlighter?: CodeHighlighter;
+  highlighter?: SignalValue<CodeHighlighter | null>;
   dialect: SignalValue<string>;
   code?: SignalValue<PossibleCodeScope>;
   children?: never;
 }
 
 export class Code extends Shape {
+  public static readonly highlighter = new LezerHighlighter(
+    DefaultHighlightStyle,
+  );
+
   @signal()
   public declare readonly dialect: SimpleSignal<string, this>;
+
+  @signal()
+  public declare readonly highlighter: SimpleSignal<CodeHighlighter, this>;
 
   @initial('')
   @parser(parseCodeScope)
@@ -49,28 +58,27 @@ export class Code extends Shape {
 
   @computed()
   public highlighterCache() {
-    if (!this.highlighter || !this.highlighter.initialize()) return null;
+    const highlighter = this.highlighter();
+    if (!highlighter || !highlighter.initialize()) return null;
     const code = this.code();
     const before = resolveScope(code, false);
     const after = resolveScope(code, true);
     const dialect = this.dialect();
 
     return {
-      before: this.highlighter.prepare(before, dialect),
-      after: this.highlighter.prepare(after, dialect),
+      before: highlighter.prepare(before, dialect),
+      after: highlighter.prepare(after, dialect),
     };
   }
 
-  public readonly highlighter?: CodeHighlighter;
-
   private readonly cursor = new CodeCursor(this);
 
-  public constructor({highlighter, ...props}: CodeProps) {
+  public constructor(props: CodeProps) {
     super({
       fontFamily: 'monospace',
+      highlighter: Code.highlighter,
       ...props,
     });
-    this.highlighter = highlighter;
   }
 
   protected override desiredSize(): SerializedVector2<DesiredLength> {
@@ -105,6 +113,6 @@ export class Code extends Shape {
 
   protected override collectAsyncResources(): void {
     super.collectAsyncResources();
-    this.highlighter?.initialize();
+    this.highlighter()?.initialize();
   }
 }

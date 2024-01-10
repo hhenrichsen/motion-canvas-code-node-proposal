@@ -10,6 +10,7 @@ import {CodeScope, isCodeScope} from '@components/CodeScope';
 import {CodeFragment, parseCodeFragment} from '@components/CodeFragment';
 import {CodeToken} from '@components/CodeToken';
 import {Code} from '@components/Code';
+import {CodeHighlighter} from '@components/CodeHighlighter';
 
 /**
  * A stateful class for recursively traversing a code scope.
@@ -26,6 +27,7 @@ export class CodeCursor {
   private lineHeight: number;
   private fallbackFill: Color;
   private caches: {before: unknown; after: unknown} | null;
+  private highlighter: CodeHighlighter | null = null;
 
   public constructor(private readonly node: Code) {}
 
@@ -44,6 +46,7 @@ export class CodeCursor {
     this.maxWidth = 0;
     this.fallbackFill = this.node.fill() as Color;
     this.caches = this.node.highlighterCache();
+    this.highlighter = this.node.highlighter();
   }
 
   /**
@@ -180,16 +183,10 @@ export class CodeCursor {
 
       const beforeHighlight =
         this.caches &&
-        this.node.highlighter?.highlight(
-          this.beforeIndex + i,
-          this.caches.before,
-        );
+        this.highlighter?.highlight(this.beforeIndex + i, this.caches.before);
       const afterHighlight =
         this.caches &&
-        this.node.highlighter?.highlight(
-          this.afterIndex + i,
-          this.caches.after,
-        );
+        this.highlighter?.highlight(this.afterIndex + i, this.caches.after);
 
       const highlight = progress < 0.5 ? beforeHighlight : afterHighlight;
       if (highlight) {

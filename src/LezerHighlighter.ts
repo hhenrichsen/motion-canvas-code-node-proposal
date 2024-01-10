@@ -97,6 +97,10 @@ export class LezerHighlighter implements CodeHighlighter<LezerCache | null> {
   }
 
   private getNodeId(node: SyntaxNode): number {
+    if (!node.parent) {
+      return -1;
+    }
+
     // NOTE: They don't want us to know about this property.
     // We need a way to persistently identify nodes and this seems to work.
     // Perhaps it could break if the tree is edited? But we don't do that. Yet.
