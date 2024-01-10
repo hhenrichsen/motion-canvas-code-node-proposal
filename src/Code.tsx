@@ -40,6 +40,7 @@ export class Code extends Shape {
   @signal()
   public declare readonly dialect: SimpleSignal<string, this>;
 
+  @initial(Code.highlighter)
   @signal()
   public declare readonly highlighter: SimpleSignal<CodeHighlighter, this>;
 
@@ -76,7 +77,6 @@ export class Code extends Shape {
   public constructor(props: CodeProps) {
     super({
       fontFamily: 'monospace',
-      highlighter: Code.highlighter,
       ...props,
     });
   }
