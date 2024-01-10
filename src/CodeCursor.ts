@@ -236,17 +236,17 @@ export class CodeCursor {
     this.context.restore();
   }
 
-  private calculateWidth(token: CodeMetrics): number {
-    return token.newRows === 0
-      ? this.cursor.x + token.lastWidth
-      : token.lastWidth;
+  private calculateWidth(metrics: CodeMetrics): number {
+    return metrics.newRows === 0
+      ? this.cursor.x + metrics.lastWidth
+      : metrics.lastWidth;
   }
 
-  private calculateMaxWidth(token: CodeMetrics): number {
+  private calculateMaxWidth(metrics: CodeMetrics): number {
     return Math.max(
       this.maxWidth,
-      token.maxWidth,
-      this.cursor.x + token.firstWidth,
+      metrics.maxWidth,
+      this.cursor.x + metrics.firstWidth,
     );
   }
 }

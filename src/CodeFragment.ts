@@ -15,7 +15,7 @@ export type PossibleCodeFragment =
   | {before: string; after: string}
   | string;
 
-export function tokenToFragment(value: CodeMetrics): CodeFragment {
+export function metricsToFragment(value: CodeMetrics): CodeFragment {
   return {
     before: value,
     after: value,
@@ -29,9 +29,9 @@ export function parseCodeFragment(
 ): CodeFragment {
   let fragment: CodeFragment;
   if (typeof value === 'string') {
-    fragment = tokenToFragment(measureString(context, monoWidth, value));
+    fragment = metricsToFragment(measureString(context, monoWidth, value));
   } else if (isCodeMetrics(value)) {
-    fragment = tokenToFragment(value);
+    fragment = metricsToFragment(value);
   } else {
     fragment = {
       before:
