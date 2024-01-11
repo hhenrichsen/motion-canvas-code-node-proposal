@@ -1,6 +1,7 @@
 import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 import {waitFor} from '@motion-canvas/core/lib/flow';
 import {Code} from '@components/Code';
+import {insert} from '@components/CodeFragment';
 import {createRef} from '@motion-canvas/core';
 import {HighlightStyle} from '@codemirror/language';
 import {tags as t} from '@lezer/highlight';
@@ -140,18 +141,19 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.5);
   yield* nested(`Hello World`, 0.5);
 
-  yield* c().code(
-    `function hello() {
-  if (Math.random() > .5) {
-    console.log('Hello World');
+  const cached = CODE`function hello() {${insert(`
+  if (Math.random() > .5) {`)}
+  ${insert(`  `)}console.log('Hello World');${insert(`
   } else {
     console.log('Goodbye World');
-  }
-}`,
-    1,
-  );
+  }`)}
+}`;
 
-  yield* waitFor(1.5);
+  yield* c().code.edit(1)`${cached}`;
+
+  yield* waitFor(0.5);
+  yield* c().code.prepend(1)`// 私🦀です\n`;
+  yield* waitFor(1);
 
   yield txt().text('CJK and UTF-8 Characters', 1);
   yield* c().code(

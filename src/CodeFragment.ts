@@ -8,11 +8,15 @@ export interface CodeFragment {
   before: CodeMetrics;
   after: CodeMetrics;
 }
+export interface RawCodeFragment {
+  before: string;
+  after: string;
+}
 
 export type PossibleCodeFragment =
   | CodeFragment
   | CodeMetrics
-  | {before: string; after: string}
+  | RawCodeFragment
   | string;
 
 export function metricsToFragment(value: CodeMetrics): CodeFragment {
@@ -46,4 +50,51 @@ export function parseCodeFragment(
   }
 
   return fragment;
+}
+
+/**
+ * Create a code fragment that represents an insertion of code.
+ *
+ * @remarks
+ * Can be used in conjunction with {@link CodeSignal.edit}.
+ *
+ * @param code - The code to insert.
+ */
+export function insert(code: string): RawCodeFragment {
+  return {
+    before: '',
+    after: code,
+  };
+}
+
+/**
+ * Create a code fragment that represents a change from one piece of code to
+ * another.
+ *
+ * @remarks
+ * Can be used in conjunction with {@link CodeSignal.edit}.
+ *
+ * @param before - The code to change from.
+ * @param after - The code to change to.
+ */
+export function replace(before: string, after: string): RawCodeFragment {
+  return {
+    before,
+    after,
+  };
+}
+
+/**
+ * Create a code fragment that represents a removal of code.
+ *
+ * @remarks
+ * Can be used in conjunction with {@link CodeSignal.edit}.
+ *
+ * @param code - The code to remove.
+ */
+export function remove(code: string): RawCodeFragment {
+  return {
+    before: code,
+    after: '',
+  };
 }
