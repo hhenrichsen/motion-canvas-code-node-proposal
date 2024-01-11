@@ -8,6 +8,7 @@ import {tags as t} from '@lezer/highlight';
 import {Txt} from '@motion-canvas/2d';
 import {LezerHighlighter} from '@components/LezerHighlighter';
 import {CODE} from '@components/CodeScope';
+import {word} from '@components/CodeRange';
 
 export default makeScene2D(function* (view) {
   // Create your animations here
@@ -149,7 +150,8 @@ export default makeScene2D(function* (view) {
   }`)}
 }`;
 
-  yield* c().code.edit(1)`${cached}`;
+  yield c().code.edit(1)`${cached}`;
+  yield* c().code.replace(word(1, 10, 3), 'warn', 1);
 
   yield* waitFor(0.5);
   yield* c().code.prepend(1)`// 私🦀です\n`;

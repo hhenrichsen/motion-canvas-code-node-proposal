@@ -15,14 +15,16 @@ import {
   CodeTag,
   parseCodeScope,
   PossibleCodeScope,
-  resolveScope,
+  resolveCodeTag,
 } from '@components/CodeScope';
 import {addInitializer, getPropertyMetaOrCreate} from '@motion-canvas/2d';
 import {CodeHighlighter} from '@components/CodeHighlighter';
 import {Code} from '@components/Code';
 import {defaultTokenize} from '@components/CodeTokenizer';
 import {defaultDiffer} from '@components/CodeDiffer';
-import {insert} from '@components/CodeFragment';
+import {insert, replace} from '@components/CodeFragment';
+import {CodePoint, CodeRange} from '@components/CodeRange';
+import {extractRange} from '@components/extractRange';
 
 interface CodeModifier<TOwner> {
   (code: string): TOwner;
@@ -30,27 +32,47 @@ interface CodeModifier<TOwner> {
   (duration?: number): TagGenerator;
 }
 
+interface CodeInsert<TOwner> {
+  (point: CodePoint, code: string): TOwner;
+  (point: CodePoint, code: string, duration: number): ThreadGenerator;
+}
+
+interface CodeRemove<TOwner> {
+  (range: CodeRange): TOwner;
+  (range: CodeRange, duration: number): ThreadGenerator;
+}
+
+interface CodeReplace<TOwner> {
+  (range: CodeRange, code: string): TOwner;
+  (range: CodeRange, code: string, duration: number): ThreadGenerator;
+}
+
 type TagGenerator = (
   strings: TemplateStringsArray,
   ...tags: CodeTag[]
 ) => ThreadGenerator;
+
+interface CodeSignalHelpers<TOwner> {
+  edit(duration?: number): TagGenerator;
+  append: CodeModifier<CodeSignalContext<TOwner>>;
+  prepend: CodeModifier<CodeSignalContext<TOwner>>;
+  insert: CodeInsert<CodeSignalContext<TOwner>>;
+  remove: CodeRemove<CodeSignalContext<TOwner>>;
+  replace: CodeReplace<CodeSignalContext<TOwner>>;
+}
 
 export type CodeSignal<TOwner> = Signal<
   PossibleCodeScope,
   CodeScope,
   TOwner,
   CodeSignalContext<TOwner>
-> & {
-  edit(duration?: number): TagGenerator;
-  append: CodeModifier<CodeSignalContext<TOwner>>;
-  prepend: CodeModifier<CodeSignalContext<TOwner>>;
-};
+> &
+  CodeSignalHelpers<TOwner>;
 
-export class CodeSignalContext<TOwner> extends SignalContext<
-  PossibleCodeScope,
-  CodeScope,
-  TOwner
-> {
+export class CodeSignalContext<TOwner>
+  extends SignalContext<PossibleCodeScope, CodeScope, TOwner>
+  implements CodeSignalHelpers<TOwner>
+{
   private readonly progress = createSignal(0);
 
   public constructor(
@@ -72,6 +94,15 @@ export class CodeSignalContext<TOwner> extends SignalContext<
     });
     Object.defineProperty(this.invokable, 'prepend', {
       value: this.prepend.bind(this),
+    });
+    Object.defineProperty(this.invokable, 'insert', {
+      value: this.insert.bind(this),
+    });
+    Object.defineProperty(this.invokable, 'remove', {
+      value: this.remove.bind(this),
+    });
+    Object.defineProperty(this.invokable, 'replace', {
+      value: this.replace.bind(this),
     });
   }
 
@@ -129,16 +160,7 @@ export class CodeSignalContext<TOwner> extends SignalContext<
 
     const savedDuration = first;
     return (strings, ...tags) =>
-      this.append(
-        resolveScope(
-          {
-            progress: 0,
-            fragments: CODE(strings, ...tags),
-          },
-          true,
-        ),
-        savedDuration,
-      );
+      this.append(resolveCodeTag(CODE(strings, ...tags), true), savedDuration);
   }
 
   public prepend(code: string): this;
@@ -163,37 +185,93 @@ export class CodeSignalContext<TOwner> extends SignalContext<
 
     const savedDuration = first;
     return (strings, ...tags) =>
-      this.prepend(
-        resolveScope(
-          {
-            progress: 0,
-            fragments: CODE(strings, ...tags),
-          },
-          true,
-        ),
-        savedDuration,
-      );
+      this.prepend(resolveCodeTag(CODE(strings, ...tags), true), savedDuration);
   }
 
-  private *editTween(value: CodeTag[], duration: number) {
+  public insert(point: CodePoint, code: string): this;
+  public insert(
+    point: CodePoint,
+    code: string,
+    duration: number,
+  ): ThreadGenerator;
+  public insert(
+    point: CodePoint,
+    code: string,
+    duration?: number,
+  ): this | ThreadGenerator {
+    return this.replace([point, point], code, duration);
+  }
+
+  public remove(range: CodeRange): this;
+  public remove(range: CodeRange, duration: number): ThreadGenerator;
+  public remove(range: CodeRange, duration?: number): this | ThreadGenerator {
+    return this.replace(range, '', duration);
+  }
+
+  public replace(range: CodeRange, code: string): this;
+  public replace(
+    range: CodeRange,
+    code: string,
+    duration: number,
+  ): ThreadGenerator;
+  public replace(
+    range: CodeRange,
+    code: string,
+    duration?: number,
+  ): this | ThreadGenerator {
+    if (duration === undefined) {
+      const current = this.get();
+      const [fragments, index] = extractRange(range, current.fragments);
+      fragments[index] = code;
+      this.set({
+        progress: current.progress,
+        fragments,
+      });
+    } else {
+      return this.replaceTween(range, code, duration);
+    }
+  }
+
+  private *replaceTween(range: CodeRange, code: string, duration: number) {
+    let current = this.get();
+    const [fragments, index] = extractRange(range, current.fragments);
     const progress = createSignal(0);
-    const scope: CodeScope = {
+    const scope = {
       progress,
-      fragments: value,
+      fragments: [replace(fragments[index] as string, code)],
     };
+    fragments[index] = scope;
     this.set({
-      progress: 0,
-      fragments: [scope],
+      progress: current.progress,
+      fragments,
     });
+
     yield* progress(1, duration);
-    const current = this.get();
+
+    current = this.get();
     this.set({
       progress: current.progress,
       fragments: current.fragments.map(fragment =>
-        fragment === scope ? resolveScope(scope, true) : fragment,
+        fragment === scope ? code : fragment,
       ),
     });
     progress.context.dispose();
+  }
+
+  private *editTween(value: CodeTag[], duration: number) {
+    this.progress(0);
+    this.set({
+      progress: this.progress,
+      fragments: value,
+    });
+    yield* this.progress(1, duration);
+    const current = this.get();
+    this.set({
+      progress: 0,
+      fragments: current.fragments.map(fragment =>
+        value.includes(fragment) ? resolveCodeTag(fragment, true) : fragment,
+      ),
+    });
   }
 
   private *appendTween(value: string, duration: number) {
