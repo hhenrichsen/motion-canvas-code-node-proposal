@@ -56,7 +56,7 @@ export function parseCodeFragment(
  * Create a code fragment that represents an insertion of code.
  *
  * @remarks
- * Can be used in conjunction with {@link CodeSignal.edit}.
+ * Can be used in conjunction with {@link CodeSignalHelpers.edit}.
  *
  * @param code - The code to insert.
  */
@@ -72,7 +72,7 @@ export function insert(code: string): RawCodeFragment {
  * another.
  *
  * @remarks
- * Can be used in conjunction with {@link CodeSignal.edit}.
+ * Can be used in conjunction with {@link CodeSignalHelpers.edit}.
  *
  * @param before - The code to change from.
  * @param after - The code to change to.
@@ -88,7 +88,7 @@ export function replace(before: string, after: string): RawCodeFragment {
  * Create a code fragment that represents a removal of code.
  *
  * @remarks
- * Can be used in conjunction with {@link CodeSignal.edit}.
+ * Can be used in conjunction with {@link CodeSignalHelpers.edit}.
  *
  * @param code - The code to remove.
  */

@@ -146,8 +146,9 @@ export class CodeCursor {
         const mirrored = Math.abs(progress - 0.5) * 2;
         alpha = clampRemap(1, 1 - timingOffset, 1, 0, mirrored);
 
+        const scale = progress < 0.5 ? 4 : -4;
         offsetY = map(
-          Math.abs(fragment.after.newRows - fragment.before.newRows) / -4,
+          Math.abs(fragment.after.newRows - fragment.before.newRows) / scale,
           0,
           mirrored,
         );
