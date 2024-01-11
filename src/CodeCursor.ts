@@ -65,6 +65,13 @@ export class CodeCursor {
         this.measureSize(possibleFragment);
         continue;
       }
+      if (Array.isArray(possibleFragment)) {
+        this.measureSize({
+          progress: scope.progress,
+          fragments: possibleFragment,
+        });
+        continue;
+      }
 
       const fragment = parseCodeFragment(
         possibleFragment,
@@ -117,6 +124,13 @@ export class CodeCursor {
       const possibleFragment = unwrap(wrappedFragment);
       if (isCodeScope(possibleFragment)) {
         this.drawScope(possibleFragment);
+        continue;
+      }
+      if (Array.isArray(possibleFragment)) {
+        this.drawScope({
+          progress: scope.progress,
+          fragments: possibleFragment,
+        });
         continue;
       }
 

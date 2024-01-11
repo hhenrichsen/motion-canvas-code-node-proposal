@@ -9,7 +9,7 @@ export interface CodeScope {
 
 export type PossibleCodeScope = CodeScope | CodeTag[] | string;
 
-export type CodeTag = SignalValue<PossibleCodeFragment | CodeScope>;
+export type CodeTag = SignalValue<PossibleCodeFragment | CodeScope | CodeTag[]>;
 
 export function CODE(
   strings: TemplateStringsArray,
@@ -62,6 +62,14 @@ export function resolveScope(
       code += resolveScope(fragment, isAfter);
     } else if (isCodeMetrics(fragment)) {
       code += fragment.content;
+    } else if (Array.isArray(fragment)) {
+      code += resolveScope(
+        {
+          progress: 0,
+          fragments: fragment,
+        },
+        isAfter,
+      );
     } else {
       code += after
         ? typeof fragment.after === 'string'
