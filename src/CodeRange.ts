@@ -39,7 +39,7 @@ export function word(line: number, from: number, length?: number): CodeRange {
  * @param endLine - The line at which the selection ends.
  * @param endColumn - The column at which the selection ends.
  */
-export function range(
+export function pointToPoint(
   startLine: number,
   startColumn: number,
   endLine: number,
