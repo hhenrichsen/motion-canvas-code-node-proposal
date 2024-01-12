@@ -1,6 +1,26 @@
+import {SignalValue, unwrap} from '@motion-canvas/core';
+
 export type CodePoint = [number, number];
 
+function isCodePoint(value: unknown): value is CodePoint {
+  return (
+    Array.isArray(value) &&
+    value.length == 2 &&
+    typeof value[0] == 'number' &&
+    typeof value[1] == 'number'
+  );
+}
+
 export type CodeRange = [CodePoint, CodePoint];
+
+export function isCodeRange(value: unknown): value is CodeRange {
+  return (
+    Array.isArray(value) &&
+    value.length == 2 &&
+    isCodePoint(value[0]) &&
+    isCodePoint(value[1])
+  );
+}
 
 /**
  * Create a code range that spans the given lines.
@@ -51,6 +71,16 @@ export function pointToPoint(
       [endLine, endColumn],
     ],
   ];
+}
+
+export function unwrapRange(
+  range: SignalValue<CodeRange | CodeRange[]>,
+): CodeRange[] {
+  const value = unwrap(range);
+  if (isCodeRange(value)) {
+    return [value];
+  }
+  return value;
 }
 
 export function isPointInCodeRange(point: CodePoint, range: CodeRange) {
