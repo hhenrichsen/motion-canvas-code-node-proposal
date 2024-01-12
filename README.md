@@ -22,6 +22,10 @@ npm install [path to this repo]
 - [x] Add highlighting to `Code` node
 - [x] Add rendering to `Code` node
 - [x] Deal with UTF-8 multi-byte characters
-- [ ] Add code diffing to `Code` node
-- [ ] Add `CodeSignal`
-- [ ] Allow tweening `code`
+- [x] Add code diffing to `Code` node
+- [x] Add `CodeSignal`
+- [x] Allow tweening `code`
+- [x] Add `edit`, `prepend`, and `append` tween helpers
+- [x] Add `insert`, `remove`, and `replace` tween helpers
+- [ ] Add `CodeHighlighter` API for things like opacity and selection
+- [ ] Verify offline usage
