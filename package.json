@@ -27,7 +27,7 @@
   "author": "",
   "homepage": "",
   "dependencies": {
-    "@codemirror/language": "^6.10.0",
+    "@codemirror/language": "^6.10.1",
     "@lezer/common": "^1.2.1",
     "@lezer/highlight": "^1.2.0",
     "@lezer/javascript": "^1.4.13",
