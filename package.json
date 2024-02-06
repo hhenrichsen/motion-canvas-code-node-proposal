@@ -32,7 +32,7 @@
     "@lezer/highlight": "^1.2.0",
     "@lezer/javascript": "^1.4.13",
     "@lezer/lr": "^1.4.0",
-    "@motion-canvas/2d": "^3.13.0",
+    "@motion-canvas/2d": "^3.14.0",
     "@motion-canvas/core": "^3.14.0",
     "code-fns": "^0.11.0"
   },
