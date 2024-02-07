@@ -9,8 +9,10 @@ import {
 import {CodeScope, isCodeScope} from '@components/CodeScope';
 import {CodeFragment, parseCodeFragment} from '@components/CodeFragment';
 import {CodeMetrics} from '@components/CodeMetrics';
-import {Code} from '@components/Code';
+import {Code, DrawHooks} from '@components/Code';
 import {CodeHighlighter} from '@components/CodeHighlighter';
+import {CodePoint, CodeRange} from '@components/CodeRange';
+import {isPointInCodeSelection} from '@components/CodeSelection';
 
 /**
  * A stateful class for recursively traversing a code scope.
@@ -19,6 +21,8 @@ import {CodeHighlighter} from '@components/CodeHighlighter';
  */
 export class CodeCursor {
   public cursor = new Vector2();
+  public beforeCursor = new Vector2();
+  public afterCursor = new Vector2();
   public beforeIndex = 0;
   public afterIndex = 0;
   private context: CanvasRenderingContext2D;
@@ -28,6 +32,10 @@ export class CodeCursor {
   private fallbackFill: Color;
   private caches: {before: unknown; after: unknown} | null;
   private highlighter: CodeHighlighter | null = null;
+  private selection: CodeRange[];
+  private selectionProgress: number | null = null;
+  private globalProgress: number[] = [];
+  private drawHooks: DrawHooks;
 
   public constructor(private readonly node: Code) {}
 
@@ -41,12 +49,18 @@ export class CodeCursor {
     this.monoWidth = context.measureText('X').width;
     this.lineHeight = parseFloat(this.node.styles.lineHeight);
     this.cursor = new Vector2();
+    this.beforeCursor = new Vector2();
+    this.afterCursor = new Vector2();
     this.beforeIndex = 0;
     this.afterIndex = 0;
     this.maxWidth = 0;
     this.fallbackFill = this.node.fill() as Color;
     this.caches = this.node.highlighterCache();
     this.highlighter = this.node.highlighter();
+    this.selection = this.node.selection();
+    this.selectionProgress = this.node.selectionProgress();
+    this.drawHooks = this.node.drawHooks();
+    this.globalProgress = [];
   }
 
   /**
@@ -156,6 +170,17 @@ export class CodeCursor {
 
       this.drawToken(fragment, scope, this.cursor.addY(offsetY), alpha);
 
+      this.beforeCursor.x = this.calculateWidth(
+        fragment.before,
+        this.beforeCursor.x,
+      );
+      this.afterCursor.x = this.calculateWidth(
+        fragment.after,
+        this.afterCursor.x,
+      );
+      this.beforeCursor.y += fragment.before.newRows;
+      this.afterCursor.y += fragment.after.newRows;
+
       this.beforeIndex += fragment.before.content.length;
       this.afterIndex += fragment.after.content.length;
 
@@ -178,19 +203,34 @@ export class CodeCursor {
     alpha: number,
   ) {
     const progress = unwrap(scope.progress);
+    const currentProgress = this.currentProgress();
+    if (progress > 0) {
+      this.globalProgress.push(progress);
+    }
+
     const code = progress < 0.5 ? fragment.before : fragment.after;
 
     this.context.save();
     this.context.globalAlpha *= alpha;
-    let offsetX = offset.x;
+    let hasOffset = true;
     let width = 0;
+    let stringLength = 0;
     let y = 0;
     for (let i = 0; i < code.content.length; i++) {
+      let color = this.fallbackFill.serialize();
       let char = code.content.charAt(i);
+      const selection: {before: number | null; after: number | null} = {
+        before: null,
+        after: null,
+      };
+
       if (char === '\n') {
         y++;
-        offsetX = 0;
+        hasOffset = false;
         width = 0;
+        stringLength = 0;
+        selection.before = null;
+        selection.after = null;
         continue;
       }
 
@@ -220,30 +260,81 @@ export class CodeCursor {
         }
 
         if (highlight.color) {
-          this.context.fillStyle = highlight.color;
+          color = highlight.color;
         }
 
-        if (highlight.skipAhead > 1) {
-          char = code.content.slice(i, i + highlight.skipAhead);
+        let skipAhead = 0;
+        do {
+          if (
+            this.processSelection(
+              selection,
+              skipAhead,
+              hasOffset,
+              stringLength,
+              y,
+            )
+          ) {
+            break;
+          }
+
+          skipAhead++;
+        } while (skipAhead < highlight.skipAhead);
+
+        if (skipAhead > 1) {
+          char = code.content.slice(i, i + skipAhead);
         }
 
         i += char.length - 1;
       } else {
+        this.processSelection(selection, 0, hasOffset, stringLength, y);
+        let skipAhead = 1;
         while (
           i < code.content.length - 1 &&
           code.content.charAt(i + 1) !== '\n'
         ) {
+          if (
+            this.processSelection(
+              selection,
+              skipAhead,
+              hasOffset,
+              stringLength,
+              y,
+            )
+          ) {
+            break;
+          }
+
+          skipAhead++;
           char += code.content.charAt(++i);
         }
       }
 
-      this.context.fillText(
+      let time: number;
+      if (fragment.before.content === '') {
+        time = selection.after;
+      } else if (fragment.after.content === '') {
+        time = selection.before;
+      } else {
+        time = map(
+          selection.before,
+          selection.after,
+          this.selectionProgress ?? currentProgress,
+        );
+      }
+
+      this.drawHooks.token(
+        this.context,
         char,
-        (offsetX + width) * this.monoWidth,
-        (offset.y + y) * this.lineHeight,
+        new Vector2(
+          (hasOffset ? offset.x + width : width) * this.monoWidth,
+          (offset.y + y) * this.lineHeight,
+        ),
+        color,
+        time,
       );
       this.context.restore();
 
+      stringLength += char.length;
       width += Math.round(
         this.context.measureText(char).width / this.monoWidth,
       );
@@ -251,17 +342,72 @@ export class CodeCursor {
     this.context.restore();
   }
 
-  private calculateWidth(metrics: CodeMetrics): number {
-    return metrics.newRows === 0
-      ? this.cursor.x + metrics.lastWidth
-      : metrics.lastWidth;
+  private calculateWidth(metrics: CodeMetrics, x = this.cursor.x): number {
+    return metrics.newRows === 0 ? x + metrics.lastWidth : metrics.lastWidth;
   }
 
-  private calculateMaxWidth(metrics: CodeMetrics): number {
-    return Math.max(
-      this.maxWidth,
-      metrics.maxWidth,
-      this.cursor.x + metrics.firstWidth,
+  private calculateMaxWidth(metrics: CodeMetrics, x = this.cursor.x): number {
+    return Math.max(this.maxWidth, metrics.maxWidth, x + metrics.firstWidth);
+  }
+
+  private currentProgress() {
+    if (this.globalProgress.length === 0) {
+      return 0;
+    }
+
+    let sum = 0;
+    for (const progress of this.globalProgress) {
+      sum += progress;
+    }
+
+    return sum / this.globalProgress.length;
+  }
+
+  private processSelection(
+    selection: {before: number | null; after: number | null},
+    skipAhead: number,
+    hasOffset: boolean,
+    stringLength: number,
+    y: number,
+  ): boolean {
+    let shouldBreak = false;
+    let currentSelected = this.isSelected(
+      (hasOffset ? this.beforeCursor.x + stringLength : stringLength) +
+        skipAhead,
+      this.beforeCursor.y + y,
     );
+    if (selection.before !== null && selection.before !== currentSelected) {
+      shouldBreak = true;
+    } else {
+      selection.before = currentSelected;
+    }
+
+    currentSelected = this.isSelected(
+      (hasOffset ? this.afterCursor.x + stringLength : stringLength) +
+        skipAhead,
+      this.afterCursor.y + y,
+      true,
+    );
+    if (selection.after !== null && selection.after !== currentSelected) {
+      shouldBreak = true;
+    } else {
+      selection.after = currentSelected;
+    }
+
+    return shouldBreak;
+  }
+
+  private isSelected(x: number, y: number, isAfter?: boolean): number {
+    const point: CodePoint = [y, x];
+    const maxSelection = isPointInCodeSelection(point, this.selection) ? 1 : 0;
+    if (this.node.oldSelection === null || this.selectionProgress === null) {
+      return maxSelection;
+    }
+
+    if (isAfter) {
+      return maxSelection;
+    }
+
+    return isPointInCodeSelection(point, this.node.oldSelection) ? 1 : 0;
   }
 }

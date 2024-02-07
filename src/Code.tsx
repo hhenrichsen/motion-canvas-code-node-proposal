@@ -2,6 +2,7 @@ import {
   computed,
   DesiredLength,
   initial,
+  parser,
   Shape,
   ShapeProps,
   signal,
@@ -10,7 +11,13 @@ import {
   SerializedVector2,
   SignalValue,
   SimpleSignal,
+  ThreadGenerator,
+  TimingFunction,
   unwrap,
+  createSignal,
+  Vector2,
+  map,
+  Signal,
 } from '@motion-canvas/core';
 import {CodeHighlighter} from '@components/CodeHighlighter';
 import {PossibleCodeScope, resolveScope} from '@components/CodeScope';
@@ -22,11 +29,33 @@ import {
   codeSignal,
   CodeSignalContext,
 } from '@components/CodeSignal';
+import {CodeRange, lines} from '@components/CodeRange';
+import {
+  CodeSelection,
+  parseCodeSelection,
+  PossibleCodeSelection,
+} from '@components/CodeSelection';
+
+export interface DrawTokenHook {
+  (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    position: Vector2,
+    color: string,
+    selection: number,
+  ): void;
+}
+
+export interface DrawHooks {
+  token: DrawTokenHook;
+}
 
 export interface CodeProps extends ShapeProps {
   highlighter?: SignalValue<CodeHighlighter | null>;
   dialect: SignalValue<string>;
   code?: SignalValue<PossibleCodeScope>;
+  selection?: SignalValue<PossibleCodeSelection>;
+  drawHooks?: SignalValue<DrawHooks>;
   children?: never;
 }
 
@@ -64,6 +93,39 @@ export class Code extends Shape {
 
   @codeSignal()
   public declare readonly code: CodeSignal<this>;
+
+  @initial<DrawHooks>({
+    token(ctx, text, position, color, selection) {
+      ctx.fillStyle = color;
+      ctx.globalAlpha *= map(0.2, 1, selection);
+      ctx.fillText(text, position.x, position.y);
+    },
+  })
+  @signal()
+  public declare readonly drawHooks: SimpleSignal<DrawHooks, this>;
+
+  @initial(lines(0, Infinity))
+  @parser(parseCodeSelection)
+  @signal()
+  public declare readonly selection: Signal<
+    PossibleCodeSelection,
+    CodeSelection,
+    this
+  >;
+  public oldSelection: CodeSelection | null = null;
+  public selectionProgress = createSignal<number | null>(null);
+  protected *tweenSelection(
+    value: CodeRange[],
+    duration: number,
+    timingFunction: TimingFunction,
+  ): ThreadGenerator {
+    this.oldSelection = this.selection();
+    this.selection(value);
+    this.selectionProgress(0);
+    yield* this.selectionProgress(1, duration, timingFunction);
+    this.selectionProgress(null);
+    this.oldSelection = null;
+  }
 
   /**
    * Get the currently displayed code as a string.

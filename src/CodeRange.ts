@@ -1,5 +1,3 @@
-import {SignalValue, unwrap} from '@motion-canvas/core';
-
 export type CodePoint = [number, number];
 
 function isCodePoint(value: unknown): value is CodePoint {
@@ -64,23 +62,11 @@ export function pointToPoint(
   startColumn: number,
   endLine: number,
   endColumn: number,
-): CodeRange[] {
+): CodeRange {
   return [
-    [
-      [startLine, startColumn],
-      [endLine, endColumn],
-    ],
+    [startLine, startColumn],
+    [endLine, endColumn],
   ];
-}
-
-export function unwrapRange(
-  range: SignalValue<CodeRange | CodeRange[]>,
-): CodeRange[] {
-  const value = unwrap(range);
-  if (isCodeRange(value)) {
-    return [value];
-  }
-  return value;
 }
 
 export function isPointInCodeRange(point: CodePoint, range: CodeRange) {

@@ -2,13 +2,13 @@ import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 import {waitFor} from '@motion-canvas/core/lib/flow';
 import {Code} from '@components/Code';
 import {insert} from '@components/CodeFragment';
-import {createRef} from '@motion-canvas/core';
+import {createRef, DEFAULT} from '@motion-canvas/core';
 import {HighlightStyle} from '@codemirror/language';
 import {tags as t} from '@lezer/highlight';
 import {Txt} from '@motion-canvas/2d';
 import {LezerHighlighter} from '@components/LezerHighlighter';
 import {CODE} from '@components/CodeScope';
-import {word} from '@components/CodeRange';
+import {lines, word} from '@components/CodeRange';
 
 export default makeScene2D(function* (view) {
   // Create your animations here
@@ -137,9 +137,13 @@ export default makeScene2D(function* (view) {
     />,
   );
 
+  yield txt().text('Code Selection', 1);
+  yield* c().selection(word(1, 14, 7), 1);
+
   yield txt().text('Code Manipulation', 1);
   yield* nested(`World`, 1);
   yield* waitFor(0.5);
+  yield c().selection(word(1, 14, 13), 0.5);
   yield* nested(`Hello World`, 0.5);
 
   const cached = CODE`function hello() {${insert(`
@@ -150,10 +154,12 @@ export default makeScene2D(function* (view) {
   }`)}
 }`;
 
+  yield c().selection(lines(1, 5), 1);
   yield c().code.edit(1)`${cached}`;
   yield* c().code.replace(word(1, 10, 3), 'warn', 1);
 
   yield* waitFor(0.5);
+  yield c().selection(DEFAULT, 1);
   yield* c().code.prepend(1)`// 私🦀です\n`;
   yield* waitFor(1);
 
